@@ -1,43 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import FormularioLogin from "../components/login/FormularioLogin";
-import { supabase } from "../database/supabaseconfig";
-
-const [usuario, setUsuario] = useState("");
-const [contrasena, setContrasena] = useState("");
-const [error, setError] = useState(null);
-const navegar = useNavigate();
-
-const iniciarSesion = async () => {
-  try {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: usuario,
-      password: contrasena,
-    });
-
-    if (error) {
-      setError("Usuario o contraseña incorrectos");
-      return;
-    }
-
-    if (data.user) {
-      localStorage.setItem("usuario-supabase", usuario);
-      navegar("/");
-    }
-  } catch (err) {
-    setError("Error al conectar con el servidor");
-    console.error("Error en la solicitud:", err);
-  }
-};
-
-
-useEffect(() => {
-  const usuarioGuardado = localStorage.getItem("usuario-supabase");
-  if (usuarioGuardado) {
-    navegar("/");
-  }
-}, [navegar]);
-
+import { supabase } from "../assets/database/supabaseconfig";
 
 const estiloContenedor = {
   position: "fixed",
@@ -52,3 +16,54 @@ const estiloContenedor = {
   overflow: "hidden",
   padding: "20px",
 };
+
+const Login = () => {
+  const [usuario, setUsuario] = useState("");
+  const [contrasena, setContrasena] = useState("");
+  const [error, setError] = useState(null);
+  const navegar = useNavigate();
+
+  const iniciarSesion = async () => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: usuario,
+        password: contrasena,
+      });
+
+      if (error) {
+        setError("Usuario o contraseña incorrectos");
+        return;
+      }
+
+      if (data.user) {
+        localStorage.setItem("usuario-supabase", usuario);
+        navegar("/");
+      }
+    } catch (err) {
+      setError("Error al conectar con el servidor");
+      console.error("Error en la solicitud:", err);
+    }
+  };
+
+  useEffect(() => {
+    const usuarioGuardado = localStorage.getItem("usuario-supabase");
+    if (usuarioGuardado) {
+      navegar("/");
+    }
+  }, [navegar]);
+
+  return (
+    <div style={estiloContenedor}>
+      <FormularioLogin
+        usuario={usuario}
+        contrasena={contrasena}
+        error={error}
+        setUsuario={setUsuario}
+        setContrasena={setContrasena}
+        iniciarSesion={iniciarSesion}
+      />
+    </div>
+  );
+};
+
+export default Login;
