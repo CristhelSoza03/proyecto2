@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Modal, Form, Button } from "react-bootstrap";
 
 const ModalRegistroCategoria = ({
@@ -8,63 +8,53 @@ const ModalRegistroCategoria = ({
   manejoCambioInput,
   agregarCategoria,
 }) => {
-  const [deshabilitado, setDeshabilitado] = useState(false);
-
-  const handleRegistrar = async () => {
-    if (deshabilitado) return;
-    setDeshabilitado(true);
-    await agregarCategoria();
-    setDeshabilitado(false);
-  };
-
   return (
     <Modal
       show={mostrarModal}
       onHide={() => setMostrarModal(false)}
-      backdrop="static"
-      keyboard={false}
       centered
+      backdrop="static"
     >
-      <Modal.Header closeButton>
-        <Modal.Title>Agregar Categoría</Modal.Title>
+      <Modal.Header closeButton className="border-0 px-4 pt-4 pb-2">
+        <Modal.Title className="modal-title h4">Agregar Categoría</Modal.Title>
       </Modal.Header>
-      <Modal.Body>
+      <Modal.Body className="px-4 pb-4">
         <Form>
           <Form.Group className="mb-3">
-            <Form.Label>Nombre</Form.Label>
+            <Form.Label className="small text-secondary mb-1">Nombre</Form.Label>
             <Form.Control
               type="text"
-              name="nombre_categoria"
-              value={nuevaCategoria.nombre_categoria}
+              name="nombre"
+              value={nuevaCategoria.nombre}
               onChange={manejoCambioInput}
               placeholder="Ingresa el nombre"
+              required
+              autoFocus
+              className="py-2"
             />
           </Form.Group>
-          <Form.Group className="mb-3">
-            <Form.Label>Descripción</Form.Label>
+          <Form.Group className="mb-4">
+            <Form.Label className="small text-secondary mb-1">Descripción</Form.Label>
             <Form.Control
               as="textarea"
-              rows={3}
-              name="descripcion_categoria"
-              value={nuevaCategoria.descripcion_categoria}
+              rows={4}
+              name="descripcion"
+              value={nuevaCategoria.descripcion}
               onChange={manejoCambioInput}
               placeholder="Ingresa la descripción"
+              className="py-2"
             />
           </Form.Group>
         </Form>
+        <div className="d-flex justify-content-end gap-2">
+          <Button variant="secondary" className="px-4 py-2" onClick={() => setMostrarModal(false)}>
+            Cancelar
+          </Button>
+          <Button variant="primary" className="px-4 py-2" onClick={agregarCategoria}>
+            Guardar
+          </Button>
+        </div>
       </Modal.Body>
-      <Modal.Footer>
-        <Button variant="secondary" onClick={() => setMostrarModal(false)}>
-          Cancelar
-        </Button>
-        <Button
-          variant="primary"
-          onClick={handleRegistrar}
-          disabled={nuevaCategoria.nombre_categoria.trim() === "" || deshabilitado}
-        >
-          Guardar
-        </Button>
-      </Modal.Footer>
     </Modal>
   );
 };

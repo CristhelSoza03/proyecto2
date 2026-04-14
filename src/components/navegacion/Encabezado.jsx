@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Container, Nav, Navbar, Offcanvas } from "react-bootstrap";
+import { supabase } from "../../database/supabaseconfig";
 import logo from "../../assets/logo.png";
-import { supabase } from "../../assets/database/supabaseconfig";
 
 const Encabezado = () => {
   const [mostrarMenu, setMostrarMenu] = useState(false);
@@ -66,68 +66,55 @@ const Encabezado = () => {
     } else {
       contenidoMenu = (
         <>
-          <Nav className="ms-auto pe-2">
+          <Nav className="ms-auto align-items-center">
             <Nav.Link
               onClick={() => manejarNavegacion("/")}
-              className={mostrarMenu ? "color-texto-marca" : "text-white"}
+              className="px-3"
             >
-              {mostrarMenu ? <i className="bi-house-fill me-2"></i> : null}
-              <strong>Inicio</strong>
+              Inicio
             </Nav.Link>
 
             <Nav.Link
               onClick={() => manejarNavegacion("/categorias")}
-              className={mostrarMenu ? "color-texto-marca" : "text-white"}
+              className="px-3"
             >
-              {mostrarMenu ? <i className="bi-bookmark-fill me-2"></i> : null}
-              <strong>Categorías</strong>
+              Categorías
+            </Nav.Link>
+
+            {/* No funcional según solicitud del usuario */}
+            <Nav.Link
+              style={{ cursor: "default", opacity: 0.8 }}
+              className="px-3"
+            >
+              Productos
             </Nav.Link>
 
             <Nav.Link
-              onClick={() => manejarNavegacion("/productos")}
-              className={mostrarMenu ? "color-texto-marca" : "text-white"}
+              style={{ cursor: "default", opacity: 0.8 }}
+              className="px-3"
             >
-              {mostrarMenu ? <i className="bi-bag-heart-fill me-2"></i> : null}
-              <strong>Productos</strong>
+              Catálogo
             </Nav.Link>
 
-            {/* Opción para ir al catálogo público desde admin */}
             <Nav.Link
-              onClick={() => manejarNavegacion("/catalogo")}
-              className={mostrarMenu ? "color-texto-marca" : "text-white"}
+              onClick={cerrarSesion}
+              className="ps-3"
             >
-              {mostrarMenu ? <i className="bi-images me-2"></i> : null}
-              <strong>Catálogo</strong>
+              <i className="bi-box-arrow-right"></i>
             </Nav.Link>
-
-            <hr />
-
-            {/* Ícono cerrar sesión en barra superior */}
-            {mostrarMenu ? null : (
-              <Nav.Link
-                onClick={cerrarSesion}
-                className={mostrarMenu ? "color-texto-marca" : "text-white"}
-              >
-                <i className="bi-box-arrow-right me-2"></i>
-              </Nav.Link>
-            )}
-
-            <hr />
           </Nav>
 
-          {/* Información de usuario y botón cerrar sesión */}
+          {/* Información de usuario en móvil */}
           {mostrarMenu && (
-            <div className="mt-3 p-3 rounded bg-light text-dark">
-              <p className="mb-2">
-                <i className="bi-envelope-fill me-2"></i>
+            <div className="mt-3 p-3 rounded bg-light text-dark d-md-none">
+              <p className="mb-2 small">
+                <i className="bi-person-circle me-2"></i>
                 {localStorage.getItem("usuario-supabase")?.toLowerCase() || "Usuario"}
               </p>
-
               <button
-                className="btn btn-outline-danger mt-3 w-100"
+                className="btn btn-sm btn-outline-danger w-100"
                 onClick={cerrarSesion}
               >
-                <i className="bi-box-arrow-right me-2"></i>
                 Cerrar sesión
               </button>
             </div>
@@ -138,50 +125,47 @@ const Encabezado = () => {
   }
 
   return (
-    <Navbar expand="md" fixed="top" className="color-navbar shadow-lg" variant="dark">
+    <Navbar expand="md" fixed="top" className="color-navbar py-2" variant="dark">
       <Container>
-
         <Navbar.Brand
-          onClick={() => manejarNavegacion(esCatalogo ? "/catalogo" : "/")}
-          className="text-white fw-bold d-flex align-items-center"
+          onClick={() => manejarNavegacion("/")}
+          className="text-white d-flex align-items-center"
           style={{ cursor: "pointer" }}
         >
           <img
-            alt=""
+            alt="Logo"
             src={logo}
-            width="45"
-            height="45"
+            width="35"
+            height="35"
             className="d-inline-block me-2"
           />
-          <strong>
-            <h4 className="mb-0">Discosa</h4>
-          </strong>
+          <span className="fs-5">Discosa</span>
         </Navbar.Brand>
 
-        {/* Botón del menú */}
-        {!esLogin && (
-          <Navbar.Toggle
-            aria-controls="menu-offcanvas"
-            onClick={manejarToggle}
-          />
-        )}
+        <Navbar.Toggle
+          aria-controls="menu-offcanvas"
+          onClick={manejarToggle}
+          className="border-0"
+        />
 
-        {/* Menú lateral */}
+        <Navbar.Collapse id="basic-navbar-nav" className="d-none d-md-flex">
+          {contenidoMenu}
+        </Navbar.Collapse>
+
         <Navbar.Offcanvas
           id="menu-offcanvas"
+          className="d-md-none"
           placement="end"
           show={mostrarMenu}
           onHide={() => setMostrarMenu(false)}
         >
           <Offcanvas.Header closeButton>
-            <Offcanvas.Title>Menú Discosa</Offcanvas.Title>
+            <Offcanvas.Title>Menú</Offcanvas.Title>
           </Offcanvas.Header>
-
           <Offcanvas.Body>
             {contenidoMenu}
           </Offcanvas.Body>
         </Navbar.Offcanvas>
-
       </Container>
     </Navbar>
   );

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import FormularioLogin from "../components/login/FormularioLogin";
-import { supabase } from "../assets/database/supabaseconfig";
+import { supabase } from "../database/supabaseconfig";
 
 const estiloContenedor = {
   position: "fixed",
