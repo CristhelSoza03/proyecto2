@@ -7,29 +7,9 @@ const TablaCategorias = ({
   abrirModalEdicion,
   abrirModalEliminacion
 }) => {
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (categorias && categorias.length > 0) {
-        setLoading(false);
-      } else {
-        setLoading(true);
-      }
-    }, 0);
-
-    return () => clearTimeout(timer);
-  }, [categorias]);
-
   return (
     <>
-      {loading ? (
-        <div className="text-center">
-          <h4>Cargando categorías...</h4>
-          <Spinner animation="border" variant="success" role="status" />
-        </div>
-      ) : (
-        <Table striped borderless hover responsive size="sm">
+      <Table striped borderless hover responsive size="sm">
           <thead>
             <tr>
               <th>ID</th>
@@ -65,7 +45,6 @@ const TablaCategorias = ({
             ))}
           </tbody>
         </Table>
-      )}
     </>
   );
 };

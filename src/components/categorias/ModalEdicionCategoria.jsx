@@ -12,8 +12,8 @@ const ModalEdicionCategoria = ({ show, onHide, categoria, onUpdate, setToast }) 
   useEffect(() => {
     if (categoria) {
       setDatos({
-        nombre: categoria.nombre || "",
-        descripcion: categoria.descripcion || "",
+        nombre: categoria.nombre_categoria || categoria.nombre || "",
+        descripcion: categoria.descripcion_categoria || categoria.descripcion || "",
       });
     }
   }, [categoria]);
@@ -38,8 +38,8 @@ const ModalEdicionCategoria = ({ show, onHide, categoria, onUpdate, setToast }) 
       const { error } = await supabase
         .from("categorias")
         .update({
-          nombre: datos.nombre,
-          descripcion: datos.descripcion,
+          nombre_categoria: datos.nombre,
+          descripcion_categoria: datos.descripcion,
         })
         .eq("id_categoria", categoria.id_categoria);
 

@@ -41,7 +41,7 @@ const ModalEliminacionCategoria = ({ show, onHide, categoria, onUpdate, setToast
       </Modal.Header>
       <Modal.Body className="px-4 pb-4">
         <p className="fs-5 fw-medium text-main">
-          ¿Estás seguro de que deseas eliminar la categoría <strong>{categoria?.nombre_categoria}</strong>?
+          ¿Estás seguro de que deseas eliminar la categoría <strong>{categoria?.nombre_categoria || categoria?.nombre}</strong>?
         </p>
         <p className="text-accent small fw-bold">
           <i className="bi bi-exclamation-triangle-fill me-2"></i>

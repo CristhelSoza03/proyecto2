@@ -4,6 +4,7 @@ import { supabase } from "../database/supabaseconfig";
 
 import ModalRegistroCategoria from "../components/categorias/ModalRegistroCategoria";
 import TablaCategorias from "../components/categorias/TablaCategorias";
+import TarjetaCategoria from "../components/categorias/TarjetaCategoria";
 import NotificacionOperacion from "../components/NotificacionOperacion";
 import ModalEdicionCategoria from "../components/categorias/ModalEdicionCategoria";
 import ModalEliminacionCategoria from "../components/categorias/ModalEliminacionCategoria";
@@ -29,11 +30,7 @@ const Categorias = () => {
   });
 
   const abrirModalEdicion = (categoria) => {
-    setCategoriaEditar({
-      id_categoria: categoria.id_categoria,
-      nombre: categoria.nombre_categoria,
-      descripcion: categoria.descripcion_categoria,
-    });
+    setCategoriaEditar(categoria);
     setMostrarModalEdicion(true);
   };
 
@@ -45,31 +42,63 @@ const Categorias = () => {
   const cargarCategorias = async () => {
     try {
       setCargando(true);
-      const { data, error } = await supabase
+      
+      // Intentar cargar categorías de 'categorias' o 'productos_categorias' si falla
+      let response = await supabase
         .from("categorias")
         .select("*")
         .order("id_categoria", { ascending: true });
 
+      if ((!response.data || response.data.length === 0) && !response.error) {
+        console.warn("No hay datos en 'categorias', probando 'productos_categorias'...");
+        const altResponse = await supabase
+          .from("productos_categorias")
+          .select("*");
+        if (altResponse.data && altResponse.data.length > 0) {
+          response = altResponse;
+        }
+      }
+
+      const { data, error } = response;
+      console.log("Supabase response final:", { data, error });
+
       if (error) {
-        console.error("Error al cargar categorías:", error.message);
+        console.error("Error fetching categories:", error);
         setToast({
           mostrar: true,
-          mensaje: "Error al cargar categorías.",
+          mensaje: "Error de Supabase: " + error.message,
           tipo: "error",
         });
         return;
       }
+
+      if (!data || data.length === 0) {
+        console.warn("No se encontraron datos en ninguna tabla de categorías.");
+        setToast({
+          mostrar: true,
+          mensaje: "La base de datos respondió con 0 registros. Verifique si tiene habilitado RLS en Supabase o si los datos están en otra tabla.",
+          tipo: "advertencia",
+        });
+        setCategorias([]);
+        return;
+      }
       
-      // Mapear los datos de la BD a los nombres de campo solicitados por el profesor
-      const datosMapeados = (data || []).map(cat => ({
-        id_categoria: cat.id_categoria,
-        nombre_categoria: cat.nombre,
-        descripcion_categoria: cat.descripcion
+      setToast({
+        mostrar: true,
+        mensaje: `Se cargaron ${data.length} categorías exitosamente de la tabla '${response.from || 'categorias'}'.`,
+        tipo: "exito",
+      });
+      
+      const datosMapeados = data.map(cat => ({
+        id_categoria: cat.id_categoria || cat.id,
+        nombre_categoria: cat.nombre_categoria || cat.nombre || "Sin nombre",
+        descripcion_categoria: cat.descripcion_categoria || cat.descripcion || "Sin descripción"
       }));
       
+      console.log("Mapped categories:", datosMapeados);
       setCategorias(datosMapeados);
     } catch (err) {
-      console.error("Excepción al cargar categorías:", err.message);
+      console.error("Exception in cargarCategorias:", err);
       setToast({
         mostrar: true,
         mensaje: "Error inesperado al cargar categorías.",
@@ -105,8 +134,8 @@ const Categorias = () => {
 
       const { error } = await supabase.from("categorias").insert([
         {
-          nombre: nuevaCategoria.nombre,
-          descripcion: nuevaCategoria.descripcion,
+          nombre_categoria: nuevaCategoria.nombre,
+          descripcion_categoria: nuevaCategoria.descripcion,
         },
       ]);
 
@@ -136,16 +165,19 @@ const Categorias = () => {
     <div className="min-vh-100 bg-secondary-subtle">
       <Container className="profe-page py-4">
         <Row className="align-items-center mb-3">
-          <Col xs={7} md={8}>
-            <h3 className="profe-page-title mb-0">
-              <i className="bi bi-bookmark-plus-fill me-2" style={{ fontSize: '1.5rem' }}></i>
+          <Col xs={8} md={9}>
+            <h3 className="profe-page-title mb-0 d-flex align-items-center">
+              <i className="bi bi-bookmark-plus-fill me-3" style={{ fontSize: '1.8rem' }}></i>
               Categorías
             </h3>
           </Col>
-          <Col xs={5} md={4} className="text-end">
-            <Button onClick={() => setMostrarModal(true)} className="profe-add-btn">
-              <i className="bi bi-plus me-1"></i>
-              Nueva Categoría
+          <Col xs={4} md={3} className="text-end">
+            <Button 
+              onClick={() => setMostrarModal(true)} 
+              className="profe-add-btn rounded-3 px-3 py-2 shadow-sm"
+              style={{ backgroundColor: '#007bff', border: 'none' }}
+            >
+              <i className="bi bi-plus-lg fs-5"></i>
             </Button>
           </Col>
         </Row>
@@ -162,8 +194,18 @@ const Categorias = () => {
         )}
 
         {/* Lista de categorías cargadas */}
-        {!cargando && categorias.length > 0 && (
+        {!cargando && categorias.length > 0 ? (
           <Row>
+            {/* Implementación de las tarjetas para móviles */}
+            <Col xs={12} sm={12} md={12} className="d-lg-none">
+              <TarjetaCategoria
+                categorias={categorias}
+                abrirModalEdicion={abrirModalEdicion}
+                abrirModalEliminacion={abrirModalEliminacion}
+              />
+            </Col>
+
+            {/* Implementación de la tabla para pantallas grandes */}
             <Col lg={12} className="d-none d-lg-block">
               <TablaCategorias
                 categorias={categorias}
@@ -172,6 +214,15 @@ const Categorias = () => {
               />
             </Col>
           </Row>
+        ) : (
+          !cargando && (
+            <Row className="text-center my-5">
+              <Col>
+                <i className="bi bi-bookmark-x text-muted" style={{ fontSize: '3rem' }}></i>
+                <p className="mt-3 text-muted">No se encontraron categorías.</p>
+              </Col>
+            </Row>
+          )
         )}
 
         <ModalRegistroCategoria

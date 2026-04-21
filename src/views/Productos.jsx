@@ -16,7 +16,9 @@ const Productos = () => {
     try {
       const { data, error } = await supabase
         .from("productos")
-        .select("*, categorias(nombre_categoria)");
+        .select("*, categorias(*)");
+      
+      console.log("Productos con categorías joined:", data);
       if (error) throw error;
       setProductos(data);
     } catch (err) {
