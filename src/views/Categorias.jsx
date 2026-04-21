@@ -20,14 +20,105 @@ const Categorias = () => {
 
   const [categoriaEditar, setCategoriaEditar] = useState({
     id_categoria: "",
-    nombre: "",
-    descripcion: "",
+    nombre_categoria: "",
+    descripcion_categoria: "",
   });
 
   const [nuevaCategoria, setNuevaCategoria] = useState({
     nombre: "",
     descripcion: "",
   });
+
+  const manejoCambioInputEdicion = (e) => {
+    const { name, value } = e.target;
+    setCategoriaEditar((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const actualizarCategoria = async () => {
+    try {
+      if (!categoriaEditar.nombre_categoria.trim()) {
+        setToast({
+          mostrar: true,
+          mensaje: "El nombre es obligatorio.",
+          tipo: "advertencia",
+        });
+        return;
+      }
+
+      setMostrarModalEdicion(false);
+
+      const { error } = await supabase
+        .from("categorias")
+        .update({
+          nombre: categoriaEditar.nombre_categoria,
+          descripcion: categoriaEditar.descripcion_categoria,
+        })
+        .eq("id_categoria", categoriaEditar.id_categoria);
+
+      if (error) {
+        console.error("Error al actualizar categoría:", error);
+        setToast({
+          mostrar: true,
+          mensaje: `Error: ${error.message}`,
+          tipo: "error",
+        });
+        return;
+      }
+
+      await cargarCategorias();
+      setToast({
+        mostrar: true,
+        mensaje: `Categoría "${categoriaEditar.nombre_categoria}" actualizada exitosamente.`,
+        tipo: "exito",
+      });
+    } catch (err) {
+      setToast({
+        mostrar: true,
+        mensaje: "Error inesperado al actualizar categoría.",
+        tipo: "error",
+      });
+      console.error("Excepción al actualizar categoría:", err.message);
+    }
+  };
+
+  const eliminarCategoria = async () => {
+    if (!categoriaAEliminar) return;
+    try {
+      setMostrarModalEliminacion(false);
+
+      const { error } = await supabase
+        .from("categorias")
+        .delete()
+        .eq("id_categoria", categoriaAEliminar.id_categoria);
+
+      if (error) {
+        console.error("Error al eliminar categoría:", error.message);
+        setToast({
+          mostrar: true,
+          mensaje: `Error al eliminar la categoría ${categoriaAEliminar.nombre_categoria}.`,
+          tipo: "error",
+        });
+        return;
+      }
+
+      await cargarCategorias();
+      setToast({
+        mostrar: true,
+        mensaje: `Categoría ${categoriaAEliminar.nombre_categoria} eliminada exitosamente.`,
+        tipo: "exito",
+      });
+    } catch (err) {
+      setToast({
+        mostrar: true,
+        mensaje: "Error inesperado al eliminar categoría.",
+        tipo: "error",
+      });
+      console.error("Excepción al eliminar categoría:", err.message);
+    }
+  };
 
   const abrirModalEdicion = (categoria) => {
     setCategoriaEditar(categoria);
@@ -134,8 +225,8 @@ const Categorias = () => {
 
       const { error } = await supabase.from("categorias").insert([
         {
-          nombre_categoria: nuevaCategoria.nombre,
-          descripcion_categoria: nuevaCategoria.descripcion,
+          nombre: nuevaCategoria.nombre,
+          descripcion: nuevaCategoria.descripcion,
         },
       ]);
 
@@ -233,25 +324,20 @@ const Categorias = () => {
           agregarCategoria={agregarCategoria}
         />
 
-        {categoriaEditar && (
-          <ModalEdicionCategoria
-            show={mostrarModalEdicion}
-            onHide={() => setMostrarModalEdicion(false)}
-            categoria={categoriaEditar}
-            onUpdate={cargarCategorias}
-            setToast={setToast}
-          />
-        )}
+        <ModalEdicionCategoria
+          mostrarModalEdicion={mostrarModalEdicion}
+          setMostrarModalEdicion={setMostrarModalEdicion}
+          categoriaEditar={categoriaEditar}
+          manejoCambioInputEdicion={manejoCambioInputEdicion}
+          actualizarCategoria={actualizarCategoria}
+        />
 
-        {categoriaAEliminar && (
-          <ModalEliminacionCategoria
-            show={mostrarModalEliminacion}
-            onHide={() => setMostrarModalEliminacion(false)}
-            categoria={categoriaAEliminar}
-            onUpdate={cargarCategorias}
-            setToast={setToast}
-          />
-        )}
+        <ModalEliminacionCategoria
+          mostrarModalEliminacion={mostrarModalEliminacion}
+          setMostrarModalEliminacion={setMostrarModalEliminacion}
+          eliminarCategoria={eliminarCategoria}
+          categoria={categoriaAEliminar}
+        />
 
         <NotificacionOperacion
           mostrar={toast.mostrar}
