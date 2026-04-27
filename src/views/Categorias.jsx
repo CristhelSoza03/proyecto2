@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Button, Spinner } from "react-bootstrap";
+import { Container, Row, Col, Button, Spinner, Alert } from "react-bootstrap";
 import { supabase } from "../database/supabaseconfig";
 
 import ModalRegistroCategoria from "../components/categorias/ModalRegistroCategoria";
@@ -8,6 +8,8 @@ import TarjetaCategoria from "../components/categorias/TarjetaCategoria";
 import NotificacionOperacion from "../components/NotificacionOperacion";
 import ModalEdicionCategoria from "../components/categorias/ModalEdicionCategoria";
 import ModalEliminacionCategoria from "../components/categorias/ModalEliminacionCategoria";
+import CuadroBusquedas from "../components/busquedas/CuadroBusquedas";
+import Paginacion from "../components/ordenamiento/Paginacion";
 
 const Categorias = () => {
   const [toast, setToast] = useState({ mostrar: false, mensaje: "", tipo: "" });
@@ -17,6 +19,18 @@ const Categorias = () => {
   const [mostrarModalEliminacion, setMostrarModalEliminacion] = useState(false);
   const [categoriaAEliminar, setCategoriaAEliminar] = useState(null);
   const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
+
+  const [textoBusqueda, setTextoBusqueda] = useState("");
+  const [categoriasFiltradas, setCategoriasFiltradas] = useState([]);
+
+  const [registrosPorPagina, establecerRegistrosPorPagina] = useState(5);
+  const [paginaActual, establecerPaginaActual] = useState(1);
+
+  const [tablaActual, setTablaActual] = useState("categorias");
+  const [columnasActuales, setColumnasActuales] = useState({
+    nombre: "nombre",
+    descripcion: "descripcion"
+  });
 
   const [categoriaEditar, setCategoriaEditar] = useState({
     id_categoria: "",
@@ -50,20 +64,37 @@ const Categorias = () => {
 
       setMostrarModalEdicion(false);
 
-      const { error } = await supabase
-        .from("categorias")
+      const colId = categoriaEditar.id_original_name || "id_categoria";
+      const colNombre = categoriaEditar.nombre_original_name || "nombre";
+      const colDescripcion = categoriaEditar.descripcion_original_name || "descripcion";
+      
+      console.log(`Intentando actualizar en ${tablaActual} usando ${colId}=${categoriaEditar.id_categoria}`);
+
+      const { data, error } = await supabase
+        .from(tablaActual)
         .update({
-          nombre: categoriaEditar.nombre_categoria,
-          descripcion: categoriaEditar.descripcion_categoria,
+          [colNombre]: categoriaEditar.nombre_categoria,
+          [colDescripcion]: categoriaEditar.descripcion_categoria,
         })
-        .eq("id_categoria", categoriaEditar.id_categoria);
+        .eq(colId, categoriaEditar.id_categoria)
+        .select();
 
       if (error) {
         console.error("Error al actualizar categoría:", error);
         setToast({
           mostrar: true,
-          mensaje: `Error: ${error.message}`,
+          mensaje: `Error de Supabase: ${error.message}`,
           tipo: "error",
+        });
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        console.warn("No se afectaron filas. Posiblemente RLS activo o ID no encontrado.");
+        setToast({
+          mostrar: true,
+          mensaje: "No se pudo actualizar. Verifique si tiene permisos (RLS) en Supabase.",
+          tipo: "advertencia",
         });
         return;
       }
@@ -89,17 +120,32 @@ const Categorias = () => {
     try {
       setMostrarModalEliminacion(false);
 
-      const { error } = await supabase
-        .from("categorias")
+      const colId = categoriaAEliminar.id_original_name || "id_categoria";
+
+      console.log(`Intentando eliminar en ${tablaActual} usando ${colId}=${categoriaAEliminar.id_categoria}`);
+
+      const { data, error } = await supabase
+        .from(tablaActual)
         .delete()
-        .eq("id_categoria", categoriaAEliminar.id_categoria);
+        .eq(colId, categoriaAEliminar.id_categoria)
+        .select();
 
       if (error) {
         console.error("Error al eliminar categoría:", error.message);
         setToast({
           mostrar: true,
-          mensaje: `Error al eliminar la categoría ${categoriaAEliminar.nombre_categoria}.`,
+          mensaje: `Error de Supabase: ${error.message}`,
           tipo: "error",
+        });
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        console.warn("No se afectaron filas al eliminar. Posiblemente RLS activo.");
+        setToast({
+          mostrar: true,
+          mensaje: "No se pudo eliminar. Verifique si tiene permisos (RLS) en Supabase.",
+          tipo: "advertencia",
         });
         return;
       }
@@ -134,24 +180,30 @@ const Categorias = () => {
     try {
       setCargando(true);
       
-      // Intentar cargar categorías de 'categorias' o 'productos_categorias' si falla
+      // Intentar cargar categorías de 'categorias'
       let response = await supabase
         .from("categorias")
         .select("*")
         .order("id_categoria", { ascending: true });
 
-      if ((!response.data || response.data.length === 0) && !response.error) {
-        console.warn("No hay datos en 'categorias', probando 'productos_categorias'...");
+      let nombreTabla = "categorias";
+
+      // Si falla o está vacío, intentar 'productos_categorias'
+      if ((!response.data || response.data.length === 0)) {
+        console.warn("No hay datos en 'categorias' o hubo error, probando 'productos_categorias'...");
         const altResponse = await supabase
           .from("productos_categorias")
           .select("*");
+        
         if (altResponse.data && altResponse.data.length > 0) {
           response = altResponse;
+          nombreTabla = "productos_categorias";
         }
       }
 
       const { data, error } = response;
-      console.log("Supabase response final:", { data, error });
+      setTablaActual(nombreTabla);
+      console.log(`Cargado desde tabla: ${nombreTabla}`, { data, error });
 
       if (error) {
         console.error("Error fetching categories:", error);
@@ -165,25 +217,25 @@ const Categorias = () => {
 
       if (!data || data.length === 0) {
         console.warn("No se encontraron datos en ninguna tabla de categorías.");
-        setToast({
-          mostrar: true,
-          mensaje: "La base de datos respondió con 0 registros. Verifique si tiene habilitado RLS en Supabase o si los datos están en otra tabla.",
-          tipo: "advertencia",
-        });
         setCategorias([]);
         return;
       }
-      
-      setToast({
-        mostrar: true,
-        mensaje: `Se cargaron ${data.length} categorías exitosamente de la tabla '${response.from || 'categorias'}'.`,
-        tipo: "exito",
-      });
+
+      // Detectar nombres de columnas del primer registro
+      const primerRegistro = data[0];
+      const detectado = {
+        nombre: primerRegistro.nombre_categoria ? "nombre_categoria" : "nombre",
+        descripcion: primerRegistro.descripcion_categoria ? "descripcion_categoria" : "descripcion"
+      };
+      setColumnasActuales(detectado);
       
       const datosMapeados = data.map(cat => ({
         id_categoria: cat.id_categoria || cat.id,
+        id_original_name: cat.id_categoria ? "id_categoria" : "id",
         nombre_categoria: cat.nombre_categoria || cat.nombre || "Sin nombre",
-        descripcion_categoria: cat.descripcion_categoria || cat.descripcion || "Sin descripción"
+        nombre_original_name: cat.nombre_categoria ? "nombre_categoria" : "nombre",
+        descripcion_categoria: cat.descripcion_categoria || cat.descripcion || "Sin descripción",
+        descripcion_original_name: cat.descripcion_categoria ? "descripcion_categoria" : "descripcion"
       }));
       
       console.log("Mapped categories:", datosMapeados);
@@ -199,6 +251,37 @@ const Categorias = () => {
       setCargando(false);
     }
   };
+
+  const manejarBusqueda = (e) => {
+    setTextoBusqueda(e.target.value);
+  };
+
+  useEffect(() => {
+    if (!textoBusqueda.trim()) {
+      setCategoriasFiltradas(categorias);
+    } else {
+      const textoLower = textoBusqueda.toLowerCase().trim();
+      const filtradas = categorias.filter(
+        (cat) =>
+          cat.nombre_categoria.toLowerCase().includes(textoLower) ||
+          (cat.descripcion_categoria && cat.descripcion_categoria.toLowerCase().includes(textoLower))
+      );
+      setCategoriasFiltradas(filtradas);
+    }
+  }, [textoBusqueda, categorias]);
+
+  // Ajustar página actual si queda fuera de rango al filtrar o eliminar
+  useEffect(() => {
+    const totalPaginas = Math.ceil(categoriasFiltradas.length / registrosPorPagina);
+    if (paginaActual > totalPaginas && totalPaginas > 0) {
+      establecerPaginaActual(totalPaginas);
+    }
+  }, [categoriasFiltradas, registrosPorPagina, paginaActual]);
+
+  const categoriasPaginadas = categoriasFiltradas.slice(
+    (paginaActual - 1) * registrosPorPagina,
+    paginaActual * registrosPorPagina
+  );
 
   useEffect(() => {
     cargarCategorias();
@@ -217,16 +300,18 @@ const Categorias = () => {
       if (!nuevaCategoria.nombre || !nuevaCategoria.nombre.trim()) {
         setToast({
           mostrar: true,
-          mensaje: "El nombre de la categoría es obligatorio.",
+          mensaje: "El nombre es obligatorio.",
           tipo: "advertencia",
         });
         return;
       }
 
-      const { error } = await supabase.from("categorias").insert([
+      setMostrarModal(false);
+
+      const { error } = await supabase.from(tablaActual).insert([
         {
-          nombre: nuevaCategoria.nombre,
-          descripcion: nuevaCategoria.descripcion,
+          [columnasActuales.nombre]: nuevaCategoria.nombre,
+          [columnasActuales.descripcion]: nuevaCategoria.descripcion,
         },
       ]);
 
@@ -265,14 +350,26 @@ const Categorias = () => {
           <Col xs={4} md={3} className="text-end">
             <Button 
               onClick={() => setMostrarModal(true)} 
-              className="profe-add-btn rounded-3 px-3 py-2 shadow-sm"
+              className="profe-add-btn rounded-3 px-3 py-2 shadow-sm text-white"
               style={{ backgroundColor: '#007bff', border: 'none' }}
             >
-              <i className="bi bi-plus-lg fs-5"></i>
+              <i className="bi bi-plus-lg me-2"></i>
+              Nueva Categoría
             </Button>
           </Col>
         </Row>
         <hr className="profe-separator" />
+
+        {/* Cuadro de búsqueda debajo de la línea divisoria */}
+        <Row className="mb-4">
+          <Col md={6} lg={5}>
+            <CuadroBusquedas
+              textoBusqueda={textoBusqueda}
+              manejarCambioBusqueda={manejarBusqueda}
+              placeholder="Buscar..."
+            />
+          </Col>
+        </Row>
 
         {/* Spinner mientras se cargan las categorías */}
         {cargando && (
@@ -284,13 +381,25 @@ const Categorias = () => {
           </Row>
         )}
 
-        {/* Lista de categorías cargadas */}
-        {!cargando && categorias.length > 0 ? (
+        {/* Mensaje de no coincidencias solo cuando hay búsqueda y no hay resultados */}
+        {!cargando && textoBusqueda.trim() && categoriasFiltradas.length === 0 && (
+          <Row className="mb-4">
+            <Col>
+              <Alert variant="info" className="text-center">
+                <i className="bi bi-info-circle me-2"></i>
+                No se encontraron categorías que coincidan con "{textoBusqueda}".
+              </Alert>
+            </Col>
+          </Row>
+        )}
+
+        {/* Lista de categorías filtradas */}
+        {!cargando && categoriasFiltradas.length > 0 ? (
           <Row>
             {/* Implementación de las tarjetas para móviles */}
             <Col xs={12} sm={12} md={12} className="d-lg-none">
               <TarjetaCategoria
-                categorias={categorias}
+                categorias={categoriasPaginadas}
                 abrirModalEdicion={abrirModalEdicion}
                 abrirModalEliminacion={abrirModalEliminacion}
               />
@@ -299,14 +408,14 @@ const Categorias = () => {
             {/* Implementación de la tabla para pantallas grandes */}
             <Col lg={12} className="d-none d-lg-block">
               <TablaCategorias
-                categorias={categorias}
+                categorias={categoriasPaginadas}
                 abrirModalEdicion={abrirModalEdicion}
                 abrirModalEliminacion={abrirModalEliminacion}
               />
             </Col>
           </Row>
         ) : (
-          !cargando && (
+          !cargando && !textoBusqueda.trim() && (
             <Row className="text-center my-5">
               <Col>
                 <i className="bi bi-bookmark-x text-muted" style={{ fontSize: '3rem' }}></i>
@@ -314,6 +423,17 @@ const Categorias = () => {
               </Col>
             </Row>
           )
+        )}
+
+        {/* Paginación */}
+        {categoriasFiltradas.length > 0 && (
+          <Paginacion
+            registrosPorPagina={registrosPorPagina}
+            totalRegistros={categoriasFiltradas.length}
+            paginaActual={paginaActual}
+            establecerPaginaActual={establecerPaginaActual}
+            establecerRegistrosPorPagina={establecerRegistrosPorPagina}
+          />
         )}
 
         <ModalRegistroCategoria

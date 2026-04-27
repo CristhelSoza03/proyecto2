@@ -37,7 +37,10 @@ const Catalogo = () => {
       <Row className="mb-4">
         <Col>
           <h2><i className="bi-images me-2"></i> Nuestro Catálogo</h2>
-          <CuadroBusquedas busqueda={busqueda} setBusqueda={setBusqueda} />
+          <CuadroBusquedas 
+            textoBusqueda={busqueda} 
+            manejarCambioBusqueda={(e) => setBusqueda(e.target.value)} 
+          />
         </Col>
       </Row>
 
