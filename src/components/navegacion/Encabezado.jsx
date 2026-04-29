@@ -81,16 +81,15 @@ const Encabezado = () => {
               Categorías
             </Nav.Link>
 
-            {/* No funcional según solicitud del usuario */}
             <Nav.Link
-              style={{ cursor: "default", opacity: 0.8 }}
+              onClick={() => manejarNavegacion("/productos")}
               className="px-3"
             >
               Productos
             </Nav.Link>
 
             <Nav.Link
-              style={{ cursor: "default", opacity: 0.8 }}
+              onClick={() => manejarNavegacion("/catalogo")}
               className="px-3"
             >
               Catálogo
@@ -125,7 +124,7 @@ const Encabezado = () => {
   }
 
   return (
-    <Navbar expand="md" fixed="top" className="color-navbar py-2" variant="dark">
+    <Navbar expand="md" fixed="top" className="color-navbar py-2" variant="dark" style={{ zIndex: 1050 }}>
       <Container>
         <Navbar.Brand
           onClick={() => manejarNavegacion("/")}

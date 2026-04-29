@@ -38,3 +38,32 @@
   padding: 6px;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
 }
+
+.margen-superior-main {
+  margin-top: 75px; /* Ajuste para el navbar fixed */
+}
+
+.profe-page {
+  background: white;
+  border-radius: 15px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.profe-page-title {
+  color: #333;
+  font-weight: 700;
+}
+
+.profe-separator {
+  margin-bottom: 2rem;
+  opacity: 0.1;
+}
+
+.profe-add-btn {
+  transition: transform 0.2s;
+}
+
+.profe-add-btn:hover {
+  transform: scale(1.05);
+}

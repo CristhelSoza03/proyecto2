@@ -23,6 +23,11 @@ const Categorias = () => {
   const [textoBusqueda, setTextoBusqueda] = useState("");
   const [categoriasFiltradas, setCategoriasFiltradas] = useState([]);
 
+  // Imagen 7: Métodos de manejo de variables de estado (adaptados para Categorías)
+  const manejarBusqueda = (e) => {
+    setTextoBusqueda(e.target.value);
+  };
+
   const [registrosPorPagina, establecerRegistrosPorPagina] = useState(5);
   const [paginaActual, establecerPaginaActual] = useState(1);
 
@@ -180,30 +185,10 @@ const Categorias = () => {
     try {
       setCargando(true);
       
-      // Intentar cargar categorías de 'categorias'
-      let response = await supabase
+      const { data, error } = await supabase
         .from("categorias")
         .select("*")
         .order("id_categoria", { ascending: true });
-
-      let nombreTabla = "categorias";
-
-      // Si falla o está vacío, intentar 'productos_categorias'
-      if ((!response.data || response.data.length === 0)) {
-        console.warn("No hay datos en 'categorias' o hubo error, probando 'productos_categorias'...");
-        const altResponse = await supabase
-          .from("productos_categorias")
-          .select("*");
-        
-        if (altResponse.data && altResponse.data.length > 0) {
-          response = altResponse;
-          nombreTabla = "productos_categorias";
-        }
-      }
-
-      const { data, error } = response;
-      setTablaActual(nombreTabla);
-      console.log(`Cargado desde tabla: ${nombreTabla}`, { data, error });
 
       if (error) {
         console.error("Error fetching categories:", error);
@@ -216,12 +201,11 @@ const Categorias = () => {
       }
 
       if (!data || data.length === 0) {
-        console.warn("No se encontraron datos en ninguna tabla de categorías.");
         setCategorias([]);
         return;
       }
 
-      // Detectar nombres de columnas del primer registro
+      // Detectar nombres de columnas
       const primerRegistro = data[0];
       const detectado = {
         nombre: primerRegistro.nombre_categoria ? "nombre_categoria" : "nombre",
@@ -238,22 +222,12 @@ const Categorias = () => {
         descripcion_original_name: cat.descripcion_categoria ? "descripcion_categoria" : "descripcion"
       }));
       
-      console.log("Mapped categories:", datosMapeados);
       setCategorias(datosMapeados);
     } catch (err) {
       console.error("Exception in cargarCategorias:", err);
-      setToast({
-        mostrar: true,
-        mensaje: "Error inesperado al cargar categorías.",
-        tipo: "error",
-      });
     } finally {
       setCargando(false);
     }
-  };
-
-  const manejarBusqueda = (e) => {
-    setTextoBusqueda(e.target.value);
   };
 
   useEffect(() => {
@@ -338,8 +312,8 @@ const Categorias = () => {
   };
 
   return (
-    <div className="min-vh-100 bg-secondary-subtle">
-      <Container className="profe-page py-4">
+    <div className="min-vh-100 bg-secondary-subtle py-4">
+      <Container className="profe-page margen-superior-main">
         <Row className="align-items-center mb-3">
           <Col xs={8} md={9}>
             <h3 className="profe-page-title mb-0 d-flex align-items-center">

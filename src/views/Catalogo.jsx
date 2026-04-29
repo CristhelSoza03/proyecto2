@@ -14,10 +14,19 @@ const Catalogo = () => {
       try {
         const { data, error } = await supabase
           .from("productos")
-          .select("*, categorias(nombre_categoria)");
+          .select("*, categorias!categoria_producto(nombre)")
 
         if (error) throw error;
-        setProductos(data);
+        
+        // Mapear para mantener compatibilidad con TarjetaCatalogo que usa p.categorias
+        const datosMapeados = (data || []).map(p => ({
+          ...p,
+          categorias: {
+            nombre_categoria: p.categorias?.nombre
+          }
+        }));
+
+        setProductos(datosMapeados);
       } catch (err) {
         console.error("Error al obtener productos:", err.message);
       } finally {

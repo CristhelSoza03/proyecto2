@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Modal, Form, Button } from "react-bootstrap";
 
 const ModalRegistroCategoria = ({
@@ -8,6 +8,15 @@ const ModalRegistroCategoria = ({
   manejoCambioInput,
   agregarCategoria,
 }) => {
+  const [deshabilitado, setDeshabilitado] = useState(false);
+
+  const handleAgregar = async () => {
+    if (deshabilitado) return;
+    setDeshabilitado(true);
+    await agregarCategoria();
+    setDeshabilitado(false);
+  };
+
   return (
     <Modal
       show={mostrarModal}
@@ -50,7 +59,12 @@ const ModalRegistroCategoria = ({
           <Button variant="secondary" className="px-4 py-2" onClick={() => setMostrarModal(false)}>
             Cancelar
           </Button>
-          <Button variant="primary" className="px-4 py-2" onClick={agregarCategoria}>
+          <Button 
+            variant="primary" 
+            className="px-4 py-2" 
+            onClick={handleAgregar}
+            disabled={deshabilitado}
+          >
             Guardar
           </Button>
         </div>

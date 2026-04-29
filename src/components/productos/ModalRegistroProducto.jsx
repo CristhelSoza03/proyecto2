@@ -1,79 +1,129 @@
 import React, { useState } from "react";
-import { Modal, Button, Form } from "react-bootstrap";
-import { supabase } from "../../database/supabaseconfig";
+import { Modal, Form, Button, Row, Col } from "react-bootstrap";
 
-const ModalRegistroProducto = ({ mostrar, alCerrar, alGuardar }) => {
-  const [producto, setProducto] = useState({
-    nombre_producto: "",
-    descripcion_producto: "",
-    precio_producto: "",
-    stock_producto: "",
-    imagen_url: "",
-  });
+const ModalRegistroProducto = ({
+  mostrarModal,
+  setMostrarModal,
+  nuevoProducto,
+  manejoCambioInput,
+  manejoCambioArchivo,
+  agregarProducto,
+  categorias,
+}) => {
+  const [deshabilitado, setDeshabilitado] = useState(false);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setProducto({ ...producto, [name]: value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const { error } = await supabase.from("productos").insert([producto]);
-      if (error) throw error;
-      alGuardar();
-    } catch (err) {
-      console.error("Error al guardar:", err.message);
-    }
+  const handleAgregar = async () => {
+    if (deshabilitado) return;
+    setDeshabilitado(true);
+    await agregarProducto();
+    setDeshabilitado(false);
   };
 
   return (
-    <Modal show={mostrar} onHide={alCerrar}>
+    <Modal
+      show={mostrarModal}
+      onHide={() => setMostrarModal(false)}
+      backdrop="static"
+      centered
+      size="lg"
+    >
       <Modal.Header closeButton>
-        <Modal.Title>Registrar Producto</Modal.Title>
+        <Modal.Title>Nuevo Producto</Modal.Title>
       </Modal.Header>
-      <Form onSubmit={handleSubmit}>
-        <Modal.Body>
-          <Form.Group className="mb-3">
-            <Form.Label>Nombre</Form.Label>
-            <Form.Control
-              name="nombre_producto"
-              onChange={handleChange}
-              required
-            />
-          </Form.Group>
-          <Form.Group className="mb-3">
-            <Form.Label>Precio</Form.Label>
-            <Form.Control
-              name="precio_producto"
-              type="number"
-              onChange={handleChange}
-              required
-            />
-          </Form.Group>
-          <Form.Group className="mb-3">
-            <Form.Label>Stock</Form.Label>
-            <Form.Control
-              name="stock_producto"
-              type="number"
-              onChange={handleChange}
-              required
-            />
-          </Form.Group>
-          <Form.Group className="mb-3">
-            <Form.Label>Imagen URL</Form.Label>
-            <Form.Control name="imagen_url" onChange={handleChange} />
-          </Form.Group>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={alCerrar}>
-            Cancelar
-          </Button>
-          <Button variant="primary" type="submit">
-            Guardar
-          </Button>
-        </Modal.Footer>
-      </Form>
+
+      <Modal.Body>
+        <Form>
+          <Row>
+            <Col xs={12} md={6}>
+              <Form.Group className="mb-3">
+                <Form.Label>Categoría *</Form.Label>
+                <Form.Select
+                  name="categoria_producto"
+                  value={nuevoProducto.categoria_producto || ""}
+                  onChange={manejoCambioInput}
+                  required
+                >
+                  <option value="">Seleccione...</option>
+                  {Array.isArray(categorias) && categorias.map((cat) => (
+                    <option key={cat.id_categoria} value={cat.id_categoria}>
+                      {cat.nombre || cat.nombre_categoria}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+
+            <Col xs={12} md={6}>
+              <Form.Group className="mb-3">
+                <Form.Label>Nombre *</Form.Label>
+                <Form.Control
+                  type="text"
+                  name="nombre_producto"
+                  value={nuevoProducto.nombre_producto || ""}
+                  onChange={manejoCambioInput}
+                  placeholder="Nombre del producto"
+                  required
+                />
+              </Form.Group>
+            </Col>
+
+            <Col xs={12}>
+              <Form.Group className="mb-3">
+                <Form.Label>Precio de venta *</Form.Label>
+                <Form.Control
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  name="precio_venta"
+                  value={nuevoProducto.precio_venta || ""}
+                  onChange={manejoCambioInput}
+                  placeholder="Precio de venta"
+                  required
+                />
+              </Form.Group>
+            </Col>
+
+            <Col xs={12}>
+              <Form.Group className="mb-3">
+                <Form.Label>Imagen del producto *</Form.Label>
+                <Form.Control
+                  type="file"
+                  accept="image/*"
+                  onChange={manejoCambioArchivo}
+                  required
+                />
+              </Form.Group>
+            </Col>
+
+            <Col xs={12}>
+              <Form.Group className="mb-3">
+                <Form.Label>Descripción</Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={5}
+                  name="descripcion_producto"
+                  value={nuevoProducto.descripcion_producto || ""}
+                  onChange={manejoCambioInput}
+                  placeholder="Descripción del producto (opcional)"
+                />
+              </Form.Group>
+            </Col>
+          </Row>
+        </Form>
+      </Modal.Body>
+
+      <Modal.Footer>
+        <Button variant="secondary" onClick={() => setMostrarModal(false)}>
+          Cancelar
+        </Button>
+        <Button
+          variant="primary"
+          onClick={handleAgregar}
+          disabled={deshabilitado}
+        >
+          Guardar
+        </Button>
+      </Modal.Footer>
     </Modal>
   );
 };
