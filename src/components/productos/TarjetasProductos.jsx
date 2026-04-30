@@ -1,7 +1,7 @@
 import React from "react";
 import { Row, Col, Card, Button, Badge } from "react-bootstrap";
 
-const TarjetasProductos = ({ productos, refrescar }) => {
+const TarjetasProductos = ({ productos, refrescar, abrirModalEdicion, abrirModalEliminacion }) => {
   return (
     <Row xs={1} md={2} lg={3} className="g-4">
       {productos.map((p) => (
@@ -16,7 +16,7 @@ const TarjetasProductos = ({ productos, refrescar }) => {
               <div className="d-flex justify-content-between align-items-start mb-2">
                 <Card.Title className="mb-0">{p.nombre_producto}</Card.Title>
                 <Badge bg="info" className="text-dark">
-                  {p.categorias?.nombre_categoria || "Sin categoría"}
+                  {p.categorias?.nombre || p.categorias?.nombre_categoria || "Sin categoría"}
                 </Badge>
               </div>
               <Card.Text className="text-muted small flex-grow-1">
@@ -24,14 +24,22 @@ const TarjetasProductos = ({ productos, refrescar }) => {
               </Card.Text>
               <div className="mt-3 d-flex justify-content-between align-items-center">
                 <h5 className="mb-0 text-primary">${p.precio_producto}</h5>
-                <small className="text-muted">Stock: {p.stock_producto}</small>
+                <small className="text-muted">Stock: {p.stock}</small>
               </div>
             </Card.Body>
             <Card.Footer className="bg-white border-top-0 d-flex justify-content-between">
-              <Button variant="outline-primary" size="sm">
+              <Button 
+                variant="outline-warning" 
+                size="sm"
+                onClick={() => abrirModalEdicion(p)}
+              >
                 <i className="bi-pencil"></i>
               </Button>
-              <Button variant="outline-danger" size="sm">
+              <Button 
+                variant="outline-danger" 
+                size="sm"
+                onClick={() => abrirModalEliminacion(p)}
+              >
                 <i className="bi-trash"></i>
               </Button>
             </Card.Footer>

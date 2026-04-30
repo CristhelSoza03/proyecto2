@@ -312,8 +312,8 @@ const Categorias = () => {
   };
 
   return (
-    <div className="min-vh-100 bg-secondary-subtle py-4">
-      <Container className="profe-page margen-superior-main">
+    <div className="min-vh-100 bg-secondary-subtle">
+      <Container className="profe-page py-4">
         <Row className="align-items-center mb-3">
           <Col xs={8} md={9}>
             <h3 className="profe-page-title mb-0 d-flex align-items-center">

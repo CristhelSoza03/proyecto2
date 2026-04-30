@@ -67,7 +67,7 @@ const ModalRegistroProducto = ({
               </Form.Group>
             </Col>
 
-            <Col xs={12}>
+            <Col xs={12} md={6}>
               <Form.Group className="mb-3">
                 <Form.Label>Precio de venta *</Form.Label>
                 <Form.Control
@@ -78,6 +78,21 @@ const ModalRegistroProducto = ({
                   value={nuevoProducto.precio_venta || ""}
                   onChange={manejoCambioInput}
                   placeholder="Precio de venta"
+                  required
+                />
+              </Form.Group>
+            </Col>
+
+            <Col xs={12} md={6}>
+              <Form.Group className="mb-3">
+                <Form.Label>Stock Inicial *</Form.Label>
+                <Form.Control
+                  type="number"
+                  min="0"
+                  name="stock"
+                  value={nuevoProducto.stock || ""}
+                  onChange={manejoCambioInput}
+                  placeholder="Cantidad disponible"
                   required
                 />
               </Form.Group>

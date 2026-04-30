@@ -67,3 +67,50 @@
 .profe-add-btn:hover {
   transform: scale(1.05);
 }
+
+/* Fondo llamativo pero neutro (Degradado Pastel) */
+.fondo-app-degradado {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* Variante más colorida pero suave como la imagen */
+.fondo-estilo-moderno {
+  background: linear-gradient(45deg, #fdfcfb 0%, #e2d1c3 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* Fondo exacto a la imagen del usuario */
+.bg-secondary-subtle {
+  background: linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%) !important;
+  background-image: radial-gradient(at 0% 0%, rgba(255, 192, 203, 0.2) 0px, transparent 50%),
+                    radial-gradient(at 100% 100%, rgba(173, 216, 230, 0.2) 0px, transparent 50%) !important;
+  background-attachment: fixed !important;
+}
+
+/* Navbar Personalizado */
+.color-navbar {
+  background-color: #333333 !important; /* Gris más oscuro neutro */
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.color-navbar .nav-link,
+.color-navbar .navbar-brand {
+  color: #000000 !important; /* Letras negras */
+  font-weight: 500;
+}
+
+.color-navbar .nav-link:hover {
+  color: #333333 !important;
+  opacity: 0.8;
+}
+
+.color-navbar .navbar-toggler {
+  border-color: rgba(0,0,0,0.5) !important;
+}
+
+.color-navbar .navbar-toggler-icon {
+  filter: invert(1); /* Para que el icono del toggler sea visible en negro */
+}

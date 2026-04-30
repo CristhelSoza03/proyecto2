@@ -2,9 +2,12 @@ import React, { useEffect, useState } from "react";
 import { Container, Row, Col, Button, Alert, Spinner } from "react-bootstrap";
 import { supabase } from "../database/supabaseconfig";
 import ModalRegistroProducto from "../components/productos/ModalRegistroProducto";
+import ModalEdicionProducto from "../components/productos/ModalEdicionProducto";
+import ModalEliminacionProducto from "../components/productos/ModalEliminacionProducto";
 import NotificacionOperacion from "../components/NotificacionOperacion";
 import CuadroBusquedas from "../components/busquedas/CuadroBusquedas";
 import TarjetasProductos from "../components/productos/TarjetasProductos";
+import Paginacion from "../components/ordenamiento/Paginacion";
 
 const Productos = () => {
   const [productos, setProductos] = useState([]);
@@ -22,6 +25,7 @@ const Productos = () => {
     descripcion_producto: "",
     categoria_producto: "",
     precio_venta: "",
+    stock: "",
     archivo: null,
   });
 
@@ -31,12 +35,17 @@ const Productos = () => {
     descripcion_producto: "",
     categoria_producto: "",
     precio_venta: "",
+    stock: "",
     url_imagen: "",
     archivo: null,
   });
 
   const [productoAEliminar, setProductoAEliminar] = useState(null);
   const [toast, setToast] = useState({ mostrar: false, mensaje: "", tipo: "" });
+
+  // Estados para la paginación
+  const [registrosPorPagina, establecerRegistrosPorPagina] = useState(5);
+  const [paginaActual, establecerPaginaActual] = useState(1);
 
   // Método para obtener productos
   const obtenerProductos = async () => {
@@ -99,6 +108,20 @@ const Productos = () => {
     setTextoBusqueda(e.target.value);
   };
 
+  const manejoCambioInputEdicion = (e) => {
+    const { name, value } = e.target;
+    setProductoEditar((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const manejoCambioArchivoActualizar = (e) => {
+    const archivo = e.target.files[0];
+    if (archivo && archivo.type.startsWith("image/")) {
+      setProductoEditar((prev) => ({ ...prev, archivo }));
+    } else {
+      alert("Selecciona una imagen válida (JPG, PNG, etc.)");
+    }
+  };
+
   // Imagen 8: Métodos useEffect
   useEffect(() => {
     if (!textoBusqueda.trim()) {
@@ -117,7 +140,13 @@ const Productos = () => {
       });
       setProductosFiltrados(filtrados);
     }
+    establecerPaginaActual(1); // Resetear a la primera página al buscar
   }, [textoBusqueda, productos]);
+
+  const productosPaginados = productosFiltrados.slice(
+    (paginaActual - 1) * registrosPorPagina,
+    paginaActual * registrosPorPagina
+  );
 
   useEffect(() => {
     obtenerProductos();
@@ -183,7 +212,7 @@ const Productos = () => {
           nombre_producto: nuevoProducto.nombre_producto,
           descripcion_producto: nuevoProducto.descripcion_producto || null,
           precio_producto: parseFloat(nuevoProducto.precio_venta),
-          stock: 0, // Columna requerida según imagen (no puede ser nula)
+          stock: parseInt(nuevoProducto.stock) || 0,
           categoria_producto: nuevoProducto.categoria_producto,
           imagen_url: urlPublica,
         },
@@ -216,9 +245,115 @@ const Productos = () => {
     }
   };
 
+  const actualizarProducto = async () => {
+    try {
+      if (
+        !productoEditar.nombre_producto.trim() ||
+        !productoEditar.categoria_producto ||
+        !productoEditar.precio_venta
+      ) {
+        setToast({
+          mostrar: true,
+          mensaje: "Completa los campos obligatorios",
+          tipo: "advertencia",
+        });
+        return;
+      }
+
+      setMostrarModalEdicion(false);
+
+      let datosActualizados = {
+        nombre_producto: productoEditar.nombre_producto,
+        descripcion_producto: productoEditar.descripcion_producto || null,
+        categoria_producto: productoEditar.categoria_producto,
+        precio_producto: parseFloat(productoEditar.precio_venta),
+        imagen_url: productoEditar.url_imagen,
+        stock: parseInt(productoEditar.stock) || 0,
+      };
+
+      if (productoEditar.archivo) {
+        const nombreArchivo = `${Date.now()}_${productoEditar.archivo.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from("imagenes_productos")
+          .upload(nombreArchivo, productoEditar.archivo);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from("imagenes_productos")
+          .getPublicUrl(nombreArchivo);
+        
+        datosActualizados.imagen_url = urlData.publicUrl;
+
+        // Eliminar imagen anterior si existía
+        if (productoEditar.url_imagen) {
+          try {
+            const nombreAnterior = productoEditar.url_imagen.split("/").pop().split("?")[0];
+            await supabase.storage.from("imagenes_productos").remove([nombreAnterior]);
+          } catch (storageErr) {
+            console.error("Error al eliminar imagen anterior:", storageErr);
+          }
+        }
+      }
+
+      const { error } = await supabase
+        .from("productos")
+        .update(datosActualizados)
+        .eq("id_producto", productoEditar.id_producto);
+
+      if (error) throw error;
+
+      await obtenerProductos();
+
+      setToast({ mostrar: true, mensaje: "Producto actualizado correctamente", tipo: "exito" });
+    } catch (err) {
+      console.error("Error al actualizar:", err);
+      setToast({ mostrar: true, mensaje: "Error al actualizar producto", tipo: "error" });
+    }
+  };
+
+  const eliminarProducto = async () => {
+    try {
+      if (!productoAEliminar) return;
+
+      const { error } = await supabase
+        .from("productos")
+        .delete()
+        .eq("id_producto", productoAEliminar.id_producto);
+
+      if (error) throw error;
+
+      setToast({ mostrar: true, mensaje: "Producto eliminado", tipo: "exito" });
+      setMostrarModalEliminacion(false);
+      await obtenerProductos();
+    } catch (err) {
+      console.error("Error al eliminar:", err);
+      setToast({ mostrar: true, mensaje: "Error al eliminar: " + err.message, tipo: "error" });
+    }
+  };
+
+  const abrirModalEdicion = (producto) => {
+    setProductoEditar({
+      id_producto: producto.id_producto,
+      nombre_producto: producto.nombre_producto,
+      descripcion_producto: producto.descripcion_producto || "",
+      categoria_producto: producto.categoria_producto,
+      precio_venta: producto.precio_producto,
+      stock: producto.stock,
+      url_imagen: producto.imagen_url,
+      archivo: null,
+    });
+    setMostrarModalEdicion(true);
+  };
+
+  const abrirModalEliminacion = (producto) => {
+    setProductoAEliminar(producto);
+    setMostrarModalEliminacion(true);
+  };
+
   return (
-    <div className="min-vh-100 bg-secondary-subtle py-4">
-      <Container className="profe-page">
+    <div className="min-vh-100 bg-secondary-subtle">
+      <Container className="profe-page py-4">
         <Row className="align-items-center mb-3">
           <Col xs={8} md={9}>
             <h3 className="profe-page-title mb-0 d-flex align-items-center">
@@ -259,10 +394,25 @@ const Productos = () => {
             <p className="mt-3 text-muted">Cargando productos...</p>
           </div>
         ) : productosFiltrados.length > 0 ? (
-          <TarjetasProductos
-            productos={productosFiltrados}
-            refrescar={obtenerProductos}
-          />
+          <>
+            <TarjetasProductos
+              productos={productosPaginados}
+              refrescar={obtenerProductos}
+              abrirModalEdicion={abrirModalEdicion}
+              abrirModalEliminacion={abrirModalEliminacion}
+            />
+            
+            {/* Paginación de productos */}
+            <div className="mt-4">
+              <Paginacion
+                registrosPorPagina={registrosPorPagina}
+                totalRegistros={productosFiltrados.length}
+                paginaActual={paginaActual}
+                establecerPaginaActual={establecerPaginaActual}
+                establecerRegistrosPorPagina={establecerRegistrosPorPagina}
+              />
+            </div>
+          </>
         ) : (
           <Alert variant="info" className="text-center">
             <i className="bi bi-info-circle me-2"></i>
@@ -280,6 +430,23 @@ const Productos = () => {
           manejoCambioArchivo={manejoCambioArchivo}
           agregarProducto={agregarProducto}
           categorias={categorias}
+        />
+
+        <ModalEdicionProducto
+          mostrarModalEdicion={mostrarModalEdicion}
+          setMostrarModalEdicion={setMostrarModalEdicion}
+          productoEditar={productoEditar}
+          manejoCambioInputEdicion={manejoCambioInputEdicion}
+          manejoCambioArchivoActualizar={manejoCambioArchivoActualizar}
+          actualizarProducto={actualizarProducto}
+          categorias={categorias}
+        />
+
+        <ModalEliminacionProducto
+          mostrarModalEliminacion={mostrarModalEliminacion}
+          setMostrarModalEliminacion={setMostrarModalEliminacion}
+          eliminarProducto={eliminarProducto}
+          producto={productoAEliminar}
         />
 
         <NotificacionOperacion

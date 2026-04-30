@@ -43,9 +43,9 @@ const Encabezado = () => {
       <Nav className="ms-auto pe-2">
         <Nav.Link
           onClick={() => manejarNavegacion("/login")}
-          className={mostrarMenu ? "color-texto-marca" : "text-white"}
+          className={mostrarMenu ? "color-texto-marca" : "text-dark"}
         >
-          <i className="bi-person-fill-lock me-2"></i>
+          <i className="bi bi-person-fill-lock me-2"></i>
           Iniciar sesión
         </Nav.Link>
       </Nav>
@@ -56,9 +56,9 @@ const Encabezado = () => {
         <Nav className="ms-auto pe-2">
           <Nav.Link
             onClick={() => manejarNavegacion("/catalogo")}
-            className={mostrarMenu ? "color-texto-marca" : "text-white"}
+            className={mostrarMenu ? "color-texto-marca" : "text-dark"}
           >
-            <i className="bi-images me-2"></i>
+            <i className="bi bi-images me-2"></i>
             <strong>Catálogo</strong>
           </Nav.Link>
         </Nav>
@@ -124,11 +124,11 @@ const Encabezado = () => {
   }
 
   return (
-    <Navbar expand="md" fixed="top" className="color-navbar py-2" variant="dark" style={{ zIndex: 1050 }}>
+    <Navbar expand="md" fixed="top" className="color-navbar py-2" variant="light" style={{ zIndex: 1050 }}>
       <Container>
         <Navbar.Brand
           onClick={() => manejarNavegacion("/")}
-          className="text-white d-flex align-items-center"
+          className="text-dark d-flex align-items-center"
           style={{ cursor: "pointer" }}
         >
           <img
