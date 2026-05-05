@@ -1,74 +1,167 @@
-import React, { useState, useEffect } from "react";
-import { Container, Row, Col } from "react-bootstrap";
+import React, { useEffect, useState, useMemo } from "react";
+import { Container, Row, Col, Spinner, Alert, Form } from "react-bootstrap";
 import { supabase } from "../database/supabaseconfig";
 import TarjetaCatalogo from "../components/catalogo/TarjetaCatalogo";
 import CuadroBusquedas from "../components/busquedas/CuadroBusquedas";
 
 const Catalogo = () => {
   const [productos, setProductos] = useState([]);
-  const [busqueda, setBusqueda] = useState("");
+  const [categorias, setCategorias] = useState([]);
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("todas");
+  const [textoBusqueda, setTextoBusqueda] = useState("");
   const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const obtenerProductos = async () => {
+    const cargarDatos = async () => {
       try {
-        const { data, error } = await supabase
-          .from("productos")
-          .select("*, categorias!categoria_producto(nombre)")
+        setCargando(true);
+        setError(null);
 
-        if (error) throw error;
-        
-        // Mapear para mantener compatibilidad con TarjetaCatalogo que usa p.categorias
-        const datosMapeados = (data || []).map(p => ({
-          ...p,
-          categorias: {
-            nombre_categoria: p.categorias?.nombre
-          }
+        const [resProductos, resCategorias] = await Promise.all([
+          supabase.from("productos").select("*"),
+          supabase.from("categorias").select("*").order("nombre", { ascending: true })
+        ]);
+
+        if (resProductos.error) throw resProductos.error;
+        if (resCategorias.error) throw resCategorias.error;
+
+        // Mapear categorías para asegurar que id_categoria y nombre_categoria existan (compatibilidad)
+        const categoriasMapeadas = (resCategorias.data || []).map(cat => ({
+          ...cat,
+          id_categoria: cat.id_categoria || cat.id,
+          nombre_categoria: cat.nombre || cat.nombre_categoria
         }));
 
-        setProductos(datosMapeados);
+        setProductos(resProductos.data || []);
+        setCategorias(categoriasMapeadas);
       } catch (err) {
-        console.error("Error al obtener productos:", err.message);
+        console.error("Error al cargar el catálogo:", err.message);
+        setError("No se pudo cargar la información.");
       } finally {
         setCargando(false);
       }
     };
 
-    obtenerProductos();
+    cargarDatos();
   }, []);
 
-  const productosFiltrados = productos.filter((p) =>
-    p.nombre_producto.toLowerCase().includes(busqueda.toLowerCase())
-  );
+  // Imagen 10: Variable para la manipulación de las categorías filtradas
+  const productosFiltrados = useMemo(() => {
+    let filtrados = productos;
+
+    if (categoriaSeleccionada !== "todas") {
+      filtrados = filtrados.filter(
+        (prod) => prod.categoria_producto === parseInt(categoriaSeleccionada)
+      );
+    }
+
+    if (textoBusqueda.trim()) {
+      const textoLower = textoBusqueda.toLowerCase().trim();
+
+      filtrados = filtrados.filter((prod) => {
+        const nombre = prod.nombre_producto?.toLowerCase() || "";
+        const descripcion = prod.descripcion_producto?.toLowerCase() || "";
+        const precioTexto = prod.precio_venta?.toString() || "";
+
+        return (
+          nombre.includes(textoLower) ||
+          descripcion.includes(textoLower) ||
+          precioTexto.includes(textoLower)
+        );
+      });
+    }
+
+    return filtrados;
+  }, [productos, categoriaSeleccionada, textoBusqueda]);
+
+  // Imagen 11: Métodos de manejo de variables de estados
+  const manejarCambioCategoria = (e) => {
+    setCategoriaSeleccionada(e.target.value);
+  };
+
+  const manejarCambioBusqueda = (e) => {
+    setTextoBusqueda(e.target.value);
+  };
+
+  // Obtener nombre de categoría
+  const obtenerNombreCategoria = (idCategoria) => {
+    const cat = categorias.find((c) => c.id_categoria === idCategoria);
+    return cat ? cat.nombre_categoria : "Sin categoría";
+  };
 
   return (
-    <Container className="mt-3">
-      <Row className="mb-4">
-        <Col>
-          <h2><i className="bi-images me-2"></i> Nuestro Catálogo</h2>
-          <CuadroBusquedas 
-            textoBusqueda={busqueda} 
-            manejarCambioBusqueda={(e) => setBusqueda(e.target.value)} 
-          />
-        </Col>
-      </Row>
-
-      {cargando ? (
-        <p>Cargando productos...</p>
-      ) : (
-        <Row xs={1} md={2} lg={3} className="g-4">
-          {productosFiltrados.length > 0 ? (
-            productosFiltrados.map((p) => (
-              <Col key={p.id}>
-                <TarjetaCatalogo producto={p} />
-              </Col>
-            ))
-          ) : (
-            <p>No se encontraron productos.</p>
-          )}
+    <div className="bg-secondary-subtle min-vh-100">
+      <Container className="mt-3 px-1">
+        {/* Imagen 3ra captura: Estructura del retorno */}
+        <Row className="text-center mb-1">
+          <Col>
+            <p className="lead text-muted">
+              Nuestros productos por categoria
+            </p>
+          </Col>
         </Row>
-      )}
-    </Container>
+
+        <Row className="mb-1 align-items-end">
+          <Col md={4} lg={3} className="mb-2">
+            <Form.Group controlId="filtroCategoria">
+              <Form.Select
+                value={categoriaSeleccionada}
+                onChange={manejarCambioCategoria}
+                className="shadow-sm"
+              >
+                <option value="todas">Todas las categorías</option>
+                {categorias.map((cat) => (
+                  <option key={cat.id_categoria} value={cat.id_categoria}>
+                    {cat.nombre_categoria}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+          </Col>
+
+          <Col md={6} lg={5} className="mb-2">
+            <Form.Group controlId="busquedaProducto">
+              <CuadroBusquedas
+                textoBusqueda={textoBusqueda}
+                manejarCambioBusqueda={manejarCambioBusqueda}
+              />
+            </Form.Group>
+          </Col>
+        </Row>
+
+        {/* Estados */}
+        {cargando && (
+          <Row className="text-center my-5">
+            <Col>
+              <Spinner animation="border" variant="success" size="lg" />
+              <p className="mt-3 text-muted">Cargando productos...</p>
+            </Col>
+          </Row>
+        )}
+
+        {!cargando && productosFiltrados.length === 0 && (
+          <Alert variant="info" className="text-center">
+            <i className="bi bi-info-circle me-2"></i>
+            No se encontraron productos que coincidan con tu búsqueda.
+          </Alert>
+        )}
+
+        {/* Productos */}
+        {!cargando && productosFiltrados.length > 0 && (
+          <Row className="g-3">
+            {productosFiltrados.map((producto) => (
+              <Col xs={6} sm={6} md={4} lg={3} key={producto.id_producto}>
+                <TarjetaCatalogo
+                  producto={producto}
+                  categoriaNombre={obtenerNombreCategoria(producto.categoria_producto)}
+                />
+              </Col>
+            ))}
+          </Row>
+        )}
+      </Container>
+    </div>
   );
 };
 
