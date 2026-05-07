@@ -89,6 +89,20 @@ const Encabezado = () => {
             </Nav.Link>
 
             <Nav.Link
+              onClick={() => manejarNavegacion("/empleados")}
+              className="px-3"
+            >
+              Empleados
+            </Nav.Link>
+
+            <Nav.Link
+              onClick={() => manejarNavegacion("/clientes")}
+              className="px-3"
+            >
+              Clientes
+            </Nav.Link>
+
+            <Nav.Link
               onClick={() => manejarNavegacion("/catalogo")}
               className="px-3"
             >

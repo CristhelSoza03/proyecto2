@@ -81,6 +81,20 @@ const ModalEdicionProducto = ({
               </Form.Group>
             </Col>
 
+            <Col xs={12} md={4}>
+              <Form.Group className="mb-3">
+                <Form.Label>Stock *</Form.Label>
+                <Form.Control
+                  type="number"
+                  min="0"
+                  name="stock"
+                  value={productoEditar.stock || ""}
+                  onChange={manejoCambioInputEdicion}
+                  required
+                />
+              </Form.Group>
+            </Col>
+
             <Col xs={12} md={12}>
               <Form.Group className="mb-3 text-center">
                 <Form.Label>Imagen actual</Form.Label>
